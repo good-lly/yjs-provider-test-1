@@ -25,9 +25,7 @@ app.get("/yjs/ws/:roomId", (c) => {
 	const id = c.env.DURABLE_YJSPROVIDER.idFromName(roomId);
 	const stub = c.env.DURABLE_YJSPROVIDER.get(id);
 
-	const doUrl = new URL(
-		"wss://yjs-provider-test-1.jensenwtfwtf.workers.dev/yjs/ws",
-	);
+	const doUrl = new URL("https://example.com/ws");
 
 	const req = new Request(doUrl, { headers: c.req.raw.headers });
 	return stub.fetch(req);

@@ -1,10 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+		/>
 		<title>Collaborative Editor Demo App</title>
 		<style>
 			html,
@@ -73,10 +76,17 @@
 	<body>
 		<div class="container">
 			<span style="text-align: center; font-weight: bold; padding-top: 0.5rem">
-				Demo App for <a href="https://github.com/TimoWilhelm/yjs-cf-ws-provider">Durable Object Yjs WebSocket Provider</a>
+				Demo App for
+				<a href="https://github.com/TimoWilhelm/yjs-cf-ws-provider"
+					>Durable Object Yjs WebSocket Provider</a
+				>
 			</span>
 			<div style="display: flex; justify-content: center; padding-top: 0.5rem">
-				<span id="connection-status" style="text-transform: capitalize; font-weight: bold">Status: Disconnected</span>
+				<span
+					id="connection-status"
+					style="text-transform: capitalize; font-weight: bold"
+					>Status: Disconnected</span
+				>
 			</div>
 
 			<div style="display: flex; justify-content: center; gap: 1rem">
@@ -100,45 +110,51 @@
 		</div>
 
 		<script type="module">
-			import * as Y from 'yjs';
-			import StarterKit from '@tiptap/starter-kit';
-			import { Editor } from '@tiptap/core';
-			import { Collaboration } from '@tiptap/extension-collaboration?external=yjs,lib0';
-			import { CollaborationCursor } from '@tiptap/extension-collaboration-cursor';
-			import { WebsocketProvider } from 'y-websocket';
-			import { IndexeddbPersistence } from 'y-indexeddb';
-			import { zooId } from './src/zooId';
-			import { stringToColor } from './src/util';
-			import * as QRCode from 'qrcode';
+			import * as Y from "yjs";
+			import StarterKit from "@tiptap/starter-kit";
+			import { Editor } from "@tiptap/core";
+			import { Collaboration } from "@tiptap/extension-collaboration?external=yjs,lib0";
+			import { CollaborationCursor } from "@tiptap/extension-collaboration-cursor";
+			import { WebsocketProvider } from "y-websocket";
+			import { IndexeddbPersistence } from "y-indexeddb";
+			import { zooId } from "/src/zooId.ts";
+			import { stringToColor } from "/src/util.ts";
+			import * as QRCode from "qrcode";
 
-			let roomId = new URLSearchParams(window.location.search).get('room');
+			let roomId = new URLSearchParams(window.location.search).get("room");
 			if (!roomId) {
 				const randomNumber = Math.floor(Math.random() * 100) + 1;
-				roomId = `${zooId({ separator: '-' })}-${randomNumber}`;
+				roomId = `${zooId({ separator: "-" })}-${randomNumber}`;
 				const url = new URL(window.location.href);
-				url.searchParams.set('room', roomId);
-				window.history.replaceState({}, '', url);
+				url.searchParams.set("room", roomId);
+				window.history.replaceState({}, "", url);
 			}
 
-			QRCode.toCanvas(document.getElementById('qr-canvas'), window.location.href);
+			QRCode.toCanvas(
+				document.getElementById("qr-canvas"),
+				window.location.href,
+			);
 
 			const username = zooId();
 
 			const yDoc = new Y.Doc();
 
 			// IndexedDB Persistence to support offline editing
-			const indexeddbPersistence = new IndexeddbPersistence(`ydoc-${roomId}`, yDoc);
+			const indexeddbPersistence = new IndexeddbPersistence(
+				`ydoc-${roomId}`,
+				yDoc,
+			);
 
 			// WebSocket Provider for real-time collaboration
-			const url = new URL('/yjs/ws', window.location.href);
-			url.protocol = url.protocol.replace('http', 'ws');
+			const url = new URL("/yjs/ws", window.location.href);
+			url.protocol = url.protocol.replace("http", "ws");
 			const provider = new WebsocketProvider(url.toString(), roomId, yDoc, {
 				connect: false,
 				disableBc: true,
 			});
 
 			const editor = new Editor({
-				element: document.querySelector('#editor'),
+				element: document.querySelector("#editor"),
 				extensions: [
 					StarterKit.configure({
 						history: false, // Collaboration extension handles history (https://tiptap.dev/api/extensions/collaboration#commands)
@@ -156,45 +172,50 @@
 				],
 			});
 
-			const snapshotUpdateBuffer = fetch(`/yjs/snapshot/${roomId}`).then((res) => res.arrayBuffer());
+			const snapshotUpdateBuffer = fetch(`/yjs/snapshot/${roomId}`).then(
+				(res) => res.arrayBuffer(),
+			);
 
-			Promise.allSettled([snapshotUpdateBuffer, indexeddbPersistence.whenSynced])
+			Promise.allSettled([
+				snapshotUpdateBuffer,
+				indexeddbPersistence.whenSynced,
+			])
 				.then(([result]) => {
-					if (result.status === 'fulfilled') {
+					if (result.status === "fulfilled") {
 						const updateBuffer = result.value;
 						Y.applyUpdateV2(yDoc, new Uint8Array(updateBuffer));
-						console.log('Snapshot Size: ', updateBuffer.byteLength);
+						console.log("Snapshot Size: ", updateBuffer.byteLength);
 					}
 
 					provider.connect();
 				})
 				.catch((error) => {
 					console.error(error);
-					alert('Failed to connect');
+					alert("Failed to connect");
 				});
 
-			document.getElementById('copy-link').addEventListener('click', () => {
+			document.getElementById("copy-link").addEventListener("click", () => {
 				navigator.clipboard.writeText(window.location.href);
-				alert('Room link copied to clipboard!');
+				alert("Room link copied to clipboard!");
 			});
 
-			const connectionToggle = document.getElementById('connection-toggle');
-			const connectionStatus = document.getElementById('connection-status');
+			const connectionToggle = document.getElementById("connection-toggle");
+			const connectionStatus = document.getElementById("connection-status");
 
 			// Update connection status
 			const updateStatus = (status) => {
 				connectionStatus.textContent = `Status: ${status}`;
-				connectionToggle.textContent = status === 'connected' ? 'Disconnect' : 'Connect';
+				connectionToggle.textContent =
+					status === "connected" ? "Disconnect" : "Connect";
 			};
 
 			// Listen for provider status changes
-			provider.on('status', (event) => {
+			provider.on("status", (event) => {
 				updateStatus(event.status);
 				console.log(`Provider status: ${event.status}`);
 			});
 
-			provider.awareness.on('change', ({ added, updated, removed }) => {
-
+			provider.awareness.on("change", ({ added, updated, removed }) => {
 				const states = provider.awareness.getStates();
 				const participants = Array.from(states.entries())
 					.map(([id, value]) => {
@@ -202,16 +223,16 @@
 							return null;
 						}
 						return {
-							name: `${value.user.name}${id === provider.awareness.clientID ? ' (you)' : ''}`,
+							name: `${value.user.name}${id === provider.awareness.clientID ? " (you)" : ""}`,
 							color: value.user.color,
 						};
 					})
 					.filter(Boolean);
 
-				const participantsDiv = document.querySelector('.participants');
-				participantsDiv.innerHTML = '';
+				const participantsDiv = document.querySelector(".participants");
+				participantsDiv.innerHTML = "";
 				participants.forEach((participant) => {
-					const participantDiv = document.createElement('div');
+					const participantDiv = document.createElement("div");
 					participantDiv.textContent = participant.name;
 					participantDiv.style.color = participant.color;
 					participantsDiv.appendChild(participantDiv);
@@ -219,7 +240,7 @@
 			});
 
 			// Toggle connection on button click
-			connectionToggle.addEventListener('click', () => {
+			connectionToggle.addEventListener("click", () => {
 				if (provider.wsconnected) {
 					provider.disconnect();
 				} else {
